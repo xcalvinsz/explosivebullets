@@ -1,4 +1,4 @@
-# CS:GO Explosive bullets
+# CS:GO Explosive Bullets
 
 Plugin for Counter-Strike: Global Offensive
 Requires Sourcemod 1.8+
