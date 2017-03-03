@@ -1,9 +1,20 @@
 # CS:GO Explosive bullets
 
-This plugin runs on SourceMod for Counter Strike: GO
+Plugin for Counter-Strike: Global Offensive
+Requires Sourcemod 1.8+
 
-This plugin allows bullets on impact to create an explosion effect.
-The explosion effect can be customized from its damage, radius.
+# Description
+This plugin will make your bullets explode on impact
 
-For video and how to set up can be found here:
-https://forums.alliedmods.net/showthread.php?p=2422556
+# Convar settings
+sm_eb_enabled - [1/0] - Enables/Disables plugin
+sm_eb_damage - How much damage to do to player
+sm_eb_radius - Radius damage of explosion
+
+# Commands
+sm_eb <client> <1:ON | 0:OFF>
+sm_explosivebullets - Same as sm_eb
+
+# Installation
+Place explosivebullets.smx to addons/sourcemod/plugins/
+Place explosivebullets.cfg to cfg/sourcemod/ and edit your convars to fit your needs
