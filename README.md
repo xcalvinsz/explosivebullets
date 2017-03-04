@@ -2,12 +2,14 @@
 
 [![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/AyNLrRxBMaw/0.jpg)](http://www.youtube.com/watch?v=AyNLrRxBMaw)
 
-Plugin for Counter-Strike: Global Offensive
-
-Requires Sourcemod 1.8+
-
 ## Description
 This plugin will make your bullets explode on impact
+
+## Requirements
+```
+Plugin for Counter-Strike: Global Offensive
+Requires Sourcemod 1.8+ and Metamod 1.10+
+```
 
 ## Convar settings
 ```
