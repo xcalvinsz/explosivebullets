@@ -3,6 +3,7 @@
 [![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/AyNLrRxBMaw/0.jpg)](http://www.youtube.com/watch?v=AyNLrRxBMaw)
 
 Plugin for Counter-Strike: Global Offensive
+
 Requires Sourcemod 1.8+
 
 ## Description
