@@ -8,7 +8,7 @@ Version Log:
 - Explosion is now created with temp entities/sounds and plugin does all calculation of damage (See new video)
 - Explosion now does less damage the further you are away the impact
 - The new explosion effect will not hurt FPS as much as env_explosion entity did
-- You can now enable/disable and set damage/radius for each specific weapon from the new configuration file at sourcemod/configs/explosivebullets.cfg
+- You can now enable/disable and set damage/radius for each specific weapon from the new configuration file at sourcemod/configs/explosivebullets_guns.cfg
 - Removed the convars sm_eb_damage and sm_eb_radius
 - Shotguns no longer plays extra sounds from the explosion per bullet (There will still be multiple explosion from shotguns, but not multiple sounds)
 - sm_eb and sm_explosivebullets can turn on explosive bullets for ALL weapons reguardless if that weapon is disabled in the configs
@@ -330,7 +330,7 @@ int GetEffectIndex(const char[] sEffectName)
 void SetupKVFiles()
 {
 	char sPath[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, sPath, sizeof(sPath), "configs/explosivebullets.cfg");
+	BuildPath(Path_SM, sPath, sizeof(sPath), "configs/explosivebullets_guns.cfg");
 	
 	if (!FileExists(sPath))
 	{
