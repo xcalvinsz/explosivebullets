@@ -33,7 +33,7 @@ sm_explosivebulletsme - Same as sm_ebme
 3. Place explosivebullets.cfg to cfg/sourcemod/ and edit your convars to fit your needs
 ```
 
-##Configuration Setup
+## Configuration Setup
 * Open addons/sourcemod/configs/explosivebullets_guns.cfg
 ```
 "weapon_ak47"       //Classname of weapon
