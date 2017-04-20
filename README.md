@@ -23,7 +23,7 @@ sm_eb_roundend - [1/0] - If set to 1, explosive bullets will be enabled for ever
 sm_eb <client> <1:ON | 0:OFF> - Turns on/off explosive bullets, this will make ALL weapons have explosive bullets regardless if it is disabled in configuration
 sm_explosivebullets - Same as sm_eb
 sm_ebme - Turns on/off explosive bullets for yourself only
-sm_explosivebulletsme
+sm_explosivebulletsme - Same as sm_ebme
 ```
 
 ## Installation
