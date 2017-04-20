@@ -1,8 +1,14 @@
 /*	
 [CSGO] Explosive Bullets
-Current Version: 2.0
+Current Version: 2.1
 
 Version Log:
+2.1 -
+- Updated/Fixed flag/commands not properly giving explosive bullets to guns
+- Added convar sm_eb_warmup which will enable explosive bullets on all weapons during warmup round
+- Added convar sm_eb_roundend which will enable explosive bullets on all weapons during the round end bonus time
+- Added command sm_ebme/sm_explosivebulletsme which will enable explosive bullets on yourself only
+
 2.0 - Rewritten code
 - No longer creates an explosion with env_explosion entity (FPS heavy), now creates a custom made explosion (Less FPS intensive)
 - Explosion is now created with temp entities/sounds and plugin does all calculation of damage (See new video)
@@ -15,7 +21,7 @@ Version Log:
 */ 
 #pragma semicolon 1
 
-#define PLUGIN_VERSION "2.0"
+#define PLUGIN_VERSION "2.1"
 #define CS_SLOT_PRIMARY 0
 #define CS_SLOT_SECONDARY 1
 #define DISTORTION "explosion_child_distort01b"
@@ -31,7 +37,7 @@ Version Log:
 
 #pragma newdecls required
 
-ConVar g_cEnabled;
+ConVar g_cEnabled, g_cWarmUp, g_cRoundEnd;
 bool g_bOverride[MAXPLAYERS + 1];
 bool g_bExplode[MAXPLAYERS + 1];
 float g_fDamage[MAXPLAYERS + 1];
@@ -39,6 +45,7 @@ float g_fRadius[MAXPLAYERS + 1];
 bool g_bAccess[MAXPLAYERS + 1];
 
 ArrayList g_hArray;
+bool g_bRoundEnabled;
 
 public Plugin myinfo = 
 {
@@ -51,20 +58,26 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	CreateConVar("sm_eb_version", PLUGIN_VERSION, "Version for explosive bullets.", FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
+	CreateConVar("sm_eb_version", PLUGIN_VERSION, "Version for explosive bullets.", FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	
 	g_cEnabled = CreateConVar("sm_eb_enabled", "1", "Enables/Disables this plugin.");
+	g_cWarmUp = CreateConVar("sm_eb_warmup", "1", "If set to 1, explosive bullets will be enabled for everyone during warmup round otherwise 0 to turn off.");
+	g_cRoundEnd = CreateConVar("sm_eb_roundend", "1", "If set to 1, explosive bullets will be enabled for everyone when round ends and is waiting for the next round restart otherwise 0 to turn off.");
 	
 	RegAdminCmd("sm_eb", Command_Explode, ADMFLAG_GENERIC, "Enables explosive bullets on players.");
 	RegAdminCmd("sm_explosivebullets", Command_Explode, ADMFLAG_GENERIC, "Enables explosive bullets on players.");
+	RegAdminCmd("sm_ebme", Command_ExplodeMe, ADMFLAG_GENERIC, "Enables explosive bullets on yourself.");
+	RegAdminCmd("sm_explosivebulletsme", Command_ExplodeMe, ADMFLAG_GENERIC, "Enables explosive bullets on yourself.");
 	
+	HookEvent("round_start", Event_RoundStart);
+	HookEvent("round_end", Event_RoundEnd);
 	//Hook bullet impact to create the explosion effect, each bullet counts...even shotguns
 	HookEvent("bullet_impact", Event_BulletImpact);
 	//Hook another bullet event but does not calculate the extra bullets from shotguns, this is used so EmitAmbientSound doesn't get played more than once
 	AddTempEntHook("Shotgun Shot", Hook_BulletShot);
 	
 	g_hArray = new ArrayList();
-	AutoExecConfig(false, "explosivebullets");
+	AutoExecConfig(true, "explosivebullets");
 }
 
 public void OnMapStart()
@@ -75,6 +88,8 @@ public void OnMapStart()
 	PrecacheParticleEffect(SMOKE);
 	PrecacheParticleEffect(DIRT);
 	PrecacheSound(SOUND);
+	
+	g_bRoundEnabled = false;
 }
 
 public void OnConfigsExecuted()
@@ -101,6 +116,26 @@ public void OnClientPostAdminCheck(int client)
 {
 	g_bOverride[client] = false;
 	SDKHook(client, SDKHook_WeaponCanSwitchTo, Hook_WeaponSwitch);
+}
+
+public void OnRebuildAdminCache(AdminCachePart part)
+{
+	if (part == AdminCache_Admins)
+	{
+		RequestFrame(Frame_AdminCache, 0);
+	}
+}
+
+public void Frame_AdminCache(any data)
+{
+	char weaponname[32];
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientInGame(i) || !IsPlayerAlive(i))
+			continue;
+		GetClientWeapon(i, weaponname, sizeof(weaponname));
+		UpdateClientCache(i, weaponname);
+	}
 }
 
 public Action Command_Explode(int client, int args)
@@ -147,29 +182,55 @@ public Action Command_Explode(int client, int args)
 	return Plugin_Handled;
 }
 
+public Action Command_ExplodeMe(int client, int args)
+{
+	if (!g_cEnabled.BoolValue)
+	{
+		ReplyToCommand(client, "[SM] This plugin is disabled.");
+		return Plugin_Handled;
+	}
+	
+	g_bOverride[client] = !g_bOverride[client];
+	ReplyToCommand(client, "[SM] You have %s explosive bullets.", g_bOverride[client] ? "enabled" : "disabled");
+	return Plugin_Handled;
+}
+
 public void Hook_WeaponSwitch(int client, int weapon)
 {
 	if (weapon == -1)
 		return;
 		
-	char buffer[32], weaponname[32];
+	char weaponname[32];
 	GetEntityClassname(weapon, weaponname, sizeof(weaponname));
+	UpdateClientCache(client, weaponname);
+}
+
+public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
+{
+	g_bRoundEnabled = false;
 	
-	for (int i = 0; i < g_hArray.Length; i++)
+	if (!g_cEnabled.BoolValue)
+		return Plugin_Continue;
+	
+	if (GameRules_GetProp("m_bWarmupPeriod") && g_cWarmUp.BoolValue)
 	{
-		DataPack pack = g_hArray.Get(i);
-		pack.Reset();
-		pack.ReadString(buffer, sizeof(buffer));
-		
-		if (!strcmp(buffer, weaponname))
-		{
-			//Update current cache values
-			g_bExplode[client] = pack.ReadCell();
-			g_fDamage[client] = pack.ReadFloat();
-			g_fRadius[client] = pack.ReadFloat();
-			g_bAccess[client] = pack.ReadCell();
-		}
+		g_bRoundEnabled = true;
 	}
+	
+	return Plugin_Continue;
+}
+
+public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
+{
+	if (!g_cEnabled.BoolValue)
+		return Plugin_Continue;
+		
+	if (g_cRoundEnd.BoolValue)
+	{	
+		g_bRoundEnabled = true;
+	}
+	
+	return Plugin_Continue;
 }
 
 public Action Event_BulletImpact(Event event, const char[] name, bool dontBroadcast)
@@ -178,11 +239,8 @@ public Action Event_BulletImpact(Event event, const char[] name, bool dontBroadc
 		return Plugin_Continue;
 		
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	
-	if (!g_bOverride[client] && !g_bExplode[client])
-		return Plugin_Continue;
 		
-	if (!CheckCommandAccess(client, "", g_bAccess[client], true))
+	if ((!g_bOverride[client] && (!g_bExplode[client] || !g_bAccess[client])) && !g_bRoundEnabled)
 		return Plugin_Continue;
 		
 	float pos[3];
@@ -203,10 +261,7 @@ public Action Hook_BulletShot(const char[] te_name, const int[] Players, int num
 		
 	int client = TE_ReadNum("m_iPlayer") + 1;
 	
-	if (!g_bOverride[client] && !g_bExplode[client])
-		return Plugin_Continue;
-		
-	if (!CheckCommandAccess(client, "", g_bAccess[client], true))
+	if ((!g_bOverride[client] && (!g_bExplode[client] || !g_bAccess[client])) && !g_bRoundEnabled)
 		return Plugin_Continue;
 		
 	float pos[3], angles[3];
@@ -232,6 +287,28 @@ public bool TR_DontHitSelf(int entity, int mask, any data)
 	if (entity == data) 
 		return false;
 	return true;
+}
+
+void UpdateClientCache(int client, const char[] weaponname)
+{
+	char buffer[32];
+	
+	for (int i = 0; i < g_hArray.Length; i++)
+	{
+		DataPack pack = g_hArray.Get(i);
+		pack.Reset();
+		pack.ReadString(buffer, sizeof(buffer));
+		
+		if (!strcmp(buffer, weaponname))
+		{
+			//Update current cache values
+			g_bExplode[client] = pack.ReadCell();
+			g_fDamage[client] = pack.ReadFloat();
+			g_fRadius[client] = pack.ReadFloat();
+			g_bAccess[client] = CheckCommandAccess(client, "", (1 << pack.ReadCell()), true);
+			break;
+		}
+	}
 }
 
 void CS_CreateExplosion(int attacker, int weapon, float damage, float radius, float pos[3])

@@ -14,12 +14,16 @@ Requires Sourcemod 1.8+ and Metamod 1.10+
 ## Convar settings
 ```
 sm_eb_enabled - [1/0] - Enables/Disables plugin
+sm_eb_warmup - [1/0] - If set to 1, explosive bullets will be enabled for everyone during warmup round otherwise 0 to turn off.
+sm_eb_roundend - [1/0] - If set to 1, explosive bullets will be enabled for everyone when round ends and is waiting for the next round restart otherwise 0 to turn off.
 ```
 
 ## Commands
 ```
 sm_eb <client> <1:ON | 0:OFF> - Turns on/off explosive bullets, this will make ALL weapons have explosive bullets regardless if it is disabled in configuration
 sm_explosivebullets - Same as sm_eb
+sm_ebme - Turns on/off explosive bullets for yourself only
+sm_explosivebulletsme
 ```
 
 ## Installation
