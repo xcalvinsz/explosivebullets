@@ -128,11 +128,12 @@ public void OnRebuildAdminCache(AdminCachePart part)
 
 public void Frame_AdminCache(any data)
 {
-	char weaponname[32];
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsClientInGame(i) || !IsPlayerAlive(i))
 			continue;
+			
+		char weaponname[32];
 		GetClientWeapon(i, weaponname, sizeof(weaponname));
 		UpdateClientCache(i, weaponname);
 	}
@@ -291,10 +292,9 @@ public bool TR_DontHitSelf(int entity, int mask, any data)
 
 void UpdateClientCache(int client, const char[] weaponname)
 {
-	char buffer[32];
-	
 	for (int i = 0; i < g_hArray.Length; i++)
 	{
+		char buffer[32];
 		DataPack pack = g_hArray.Get(i);
 		pack.Reset();
 		pack.ReadString(buffer, sizeof(buffer));
@@ -320,13 +320,12 @@ void CS_CreateExplosion(int attacker, int weapon, float damage, float radius, fl
 	TE_DispatchEffect(DIRT, pos);
 	
 	//Hurt the players in the area of explosion
-	float victim_pos[3];
-	
 	for (int victim = 1; victim <= MaxClients; victim++)
 	{
 		if (!IsClientInGame(victim) || !IsPlayerAlive(victim))
 			continue;
-			
+		
+		float victim_pos[3];
 		GetClientAbsOrigin(victim, victim_pos);
 		
 		float distance = GetVectorDistance(pos, victim_pos);
@@ -410,34 +409,29 @@ void SetupKVFiles()
 	BuildPath(Path_SM, sPath, sizeof(sPath), "configs/explosivebullets_guns.cfg");
 	
 	if (!FileExists(sPath))
-	{
-		LogError("Error: Can not find map filepath %s", sPath);
-		SetFailState("Error: Can not find map filepath %s", sPath);
-	}
-	
-	Handle kv = CreateKeyValues("Explosive Bullets");
-	FileToKeyValues(kv, sPath);
+		SetFailState("Can not find map filepath %s", sPath);
+		
+	KeyValues kv = new KeyValues("Explosive Bullets");
+	kv.ImportFromFile(sPath);
 
-	if (!KvGotoFirstSubKey(kv))
-	{
-		LogError("Can not read file: %s", sPath);
+	if (!kv.GotoFirstSubKey())
 		SetFailState("Can not read file: %s", sPath);
-	}
 	
 	//Clear array of old data when map changes
 	g_hArray.Clear();
 	
-	char weaponname[32], flagstring[2];
-	int enable;
-	float damage, radius;
-	
 	do
 	{
-		KvGetSectionName(kv, weaponname, sizeof(weaponname));
-		enable = KvGetNum(kv, "Enable", 0);
-		damage = KvGetFloat(kv, "Damage", 0.0);
-		radius = KvGetFloat(kv, "Radius", 0.0);
-		KvGetString(kv, "Flag", flagstring, sizeof(flagstring), "");
+		char weaponname[32], flagstring[2];
+		int enable;
+		float damage, radius;
+		
+		kv.GetSectionName(weaponname, sizeof(weaponname));
+		enable = kv.GetNum("Enable", 0);
+		damage = kv.GetFloat("Damage", 0.0);
+		radius = kv.GetFloat("Radius", 0.0);
+		kv.GetString("Flag", flagstring, sizeof(flagstring), "");
+		
 		int buffer = flagstring[0];
 		AdminFlag flag;
 		FindFlagByChar(buffer, flag);
@@ -451,5 +445,5 @@ void SetupKVFiles()
 		pack.WriteCell(view_as<int>(flag));
 		g_hArray.Push(pack);
 		
-	} while (KvGotoNextKey(kv));
+	} while (kv.GotoNextKey());
 }
