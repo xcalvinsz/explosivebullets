@@ -1,8 +1,12 @@
 /*	
 [CSGO] Explosive Bullets
-Current Version: 2.1
+Current Version: 2.2
 
 Version Log:
+2.2 - 
+- Fixed memory leak in kv config
+- Fixed logic giving explosive bullets on non warm-up rounds?
+- Cleaned up some code and syntax
 2.1 -
 - Updated/Fixed flag/commands not properly giving explosive bullets to guns
 - Added convar sm_eb_warmup which will enable explosive bullets on all weapons during warmup round
@@ -21,7 +25,7 @@ Version Log:
 */ 
 #pragma semicolon 1
 
-#define PLUGIN_VERSION "2.1"
+#define PLUGIN_VERSION "2.2"
 #define CS_SLOT_PRIMARY 0
 #define CS_SLOT_SECONDARY 1
 #define DISTORTION "explosion_child_distort01b"
@@ -241,7 +245,7 @@ public Action Event_BulletImpact(Event event, const char[] name, bool dontBroadc
 		
 	int client = GetClientOfUserId(event.GetInt("userid"));
 		
-	if ((!g_bOverride[client] && (!g_bExplode[client] || !g_bAccess[client])) && !g_bRoundEnabled)
+	if (!g_bRoundEnabled && !g_bOverride[client] && !(g_bExplode[client] && g_bAccess[client]))
 		return Plugin_Continue;
 		
 	float pos[3];
@@ -262,7 +266,7 @@ public Action Hook_BulletShot(const char[] te_name, const int[] Players, int num
 		
 	int client = TE_ReadNum("m_iPlayer") + 1;
 	
-	if ((!g_bOverride[client] && (!g_bExplode[client] || !g_bAccess[client])) && !g_bRoundEnabled)
+	if (!g_bRoundEnabled && !g_bOverride[client] && !(g_bExplode[client] && g_bAccess[client]))
 		return Plugin_Continue;
 		
 	float pos[3], angles[3];
@@ -283,11 +287,9 @@ public Action Hook_BulletShot(const char[] te_name, const int[] Players, int num
 	return Plugin_Continue;
 }
 
-public bool TR_DontHitSelf(int entity, int mask, any data)
+public bool TR_DontHitSelf(int target, int mask, int client)
 {
-	if (entity == data) 
-		return false;
-	return true;
+	return target != client;
 }
 
 void UpdateClientCache(int client, const char[] weaponname)
@@ -446,4 +448,6 @@ void SetupKVFiles()
 		g_hArray.Push(pack);
 		
 	} while (kv.GotoNextKey());
+	
+	delete kv;
 }
