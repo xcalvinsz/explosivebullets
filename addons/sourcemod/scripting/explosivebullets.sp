@@ -1,29 +1,27 @@
-/*	
-[CSGO] Explosive Bullets
-Current Version: 2.2
-
-Version Log:
-2.2 - 
-- Fixed memory leak in kv config
-- Fixed logic giving explosive bullets on non warm-up rounds?
-- Cleaned up some code and syntax
-2.1 -
-- Updated/Fixed flag/commands not properly giving explosive bullets to guns
-- Added convar sm_eb_warmup which will enable explosive bullets on all weapons during warmup round
-- Added convar sm_eb_roundend which will enable explosive bullets on all weapons during the round end bonus time
-- Added command sm_ebme/sm_explosivebulletsme which will enable explosive bullets on yourself only
-
-2.0 - Rewritten code
-- No longer creates an explosion with env_explosion entity (FPS heavy), now creates a custom made explosion (Less FPS intensive)
-- Explosion is now created with temp entities/sounds and plugin does all calculation of damage (See new video)
-- Explosion now does less damage the further you are away the impact
-- The new explosion effect will not hurt FPS as much as env_explosion entity did
-- You can now enable/disable and set damage/radius for each specific weapon from the new configuration file at sourcemod/configs/explosivebullets_guns.cfg
-- Removed the convars sm_eb_damage and sm_eb_radius
-- Shotguns no longer plays extra sounds from the explosion per bullet (There will still be multiple explosion from shotguns, but not multiple sounds)
-- sm_eb and sm_explosivebullets can turn on explosive bullets for ALL weapons reguardless if that weapon is disabled in the configs
-*/ 
+/*  CS:GO Explosive Bullets
+ *
+ *  Copyright (C) 2017 Calvin Lee (Chaosxk)
+ * 
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) 
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT 
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with 
+ * this program. If not, see http://www.gnu.org/licenses/.
+ */
+ 
 #pragma semicolon 1
+
+#include <sourcemod>
+#include <sdktools>
+#include <sdkhooks>
+
+#pragma newdecls required
 
 #define PLUGIN_VERSION "2.2"
 #define CS_SLOT_PRIMARY 0
@@ -34,12 +32,6 @@ Version Log:
 #define DIRT "impact_dirt_child_clumps"
 //#define SOUND "weapons/sensorgrenade/sensor_explode.wav"
 #define SOUND "weapons/revolver/revolver-1_01.wav"
-
-#include <sourcemod>
-#include <sdktools>
-#include <sdkhooks>
-
-#pragma newdecls required
 
 ConVar g_cEnabled, g_cWarmUp, g_cRoundEnd;
 bool g_bOverride[MAXPLAYERS + 1];
